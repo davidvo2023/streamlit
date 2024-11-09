@@ -1,84 +1,114 @@
 import streamlit as st
-import pandas as pd  # pip install pandas
+import pandas as pd
+import altair as alt
 
+# Dữ liệu kỹ năng và công cụ cá nhân hoặc team
+skills_data = {
+    "Skill": [
+        "HTML", "CSS", "JavaScript", "Vue.js", "React",    # Frontend
+        "Python", "Node.js", "Django", "PHP", "SQL",       # Backend & Database
+        "Docker", "AWS",                                    # DevOps
+        "VBA",                     # Tool
+        "Figma", "Canva", "Photoshop",                      # Design Tool
+        "WordPress", "OctoberCMS", "Shopify"                # CMS
+    ],
+    "Proficiency (%)": [
+        90, 85, 80, 75, 80,  # Frontend
+        80, 75, 80, 80, 80,  # Backend & Database
+        50, 60,              # DevOps
+        80,      # Tool
+        80, 85, 80,          # Design Tool
+        80, 75, 85           # CMS
+    ],
+    "Category": [
+        "Frontend", "Frontend", "Frontend", "Frontend", "Frontend",
+        "Backend", "Backend", "Backend", "Backend", "Database",
+        "DevOps", "DevOps",
+        "Tool",
+        "Design Tool", "Design Tool", "Design Tool",
+        "CMS", "CMS", "CMS"
+    ]
+}
 
-# CONFIGS
-YEAR = 2023
-PREVIOUS_YEAR = 2022
-CITIES = ["Tokyo", "Yokohama", "Osaka"]
-DATA_URL = "https://raw.githubusercontent.com/Sven-Bo/datasets/master/store_sales_2022-2023.csv"
+# Dự án và hình ảnh cho mỗi category với link đúng ngôn ngữ hoặc công nghệ
+projects_data = {
+    "Frontend": [
+        {"name": "HTML Official", "image": "https://via.placeholder.com/150", "link": "https://html.spec.whatwg.org/", "description": "Official homepage for HTML."},
+        {"name": "CSS Official", "image": "https://via.placeholder.com/150", "link": "https://www.w3.org/Style/CSS/", "description": "Official homepage for CSS."},
+        {"name": "Vue.js", "image": "https://via.placeholder.com/150", "link": "https://vuejs.org/", "description": "Official Vue.js framework homepage."},
+        {"name": "React", "image": "https://via.placeholder.com/150", "link": "https://reactjs.org/", "description": "Official React framework homepage."}
+    ],
+    "Backend": [
+        {"name": "Python Official", "image": "https://via.placeholder.com/150", "link": "https://www.python.org/", "description": "Official Python homepage."},
+        {"name": "Node.js", "image": "https://via.placeholder.com/150", "link": "https://nodejs.org/", "description": "Official Node.js homepage."},
+        {"name": "Django", "image": "https://via.placeholder.com/150", "link": "https://www.djangoproject.com/", "description": "Official Django framework homepage."},
+        {"name": "PHP", "image": "https://via.placeholder.com/150", "link": "https://www.php.net/", "description": "Official PHP homepage."}
+    ],
+    "Database": [
+        {"name": "SQL Official", "image": "https://via.placeholder.com/150", "link": "https://www.mysql.com/", "description": "Official MySQL homepage."},
+    ],
+    "DevOps": [
+        {"name": "Docker", "image": "https://via.placeholder.com/150", "link": "https://www.docker.com/", "description": "Official Docker homepage."},
+        {"name": "AWS", "image": "https://via.placeholder.com/150", "link": "https://aws.amazon.com/", "description": "Official AWS homepage."}
+    ],
+    "Tool": [
+        {"name": "VBA", "image": "https://via.placeholder.com/150", "link": "https://www.microsoft.com/en-us/microsoft-365/visual-basic-for-applications", "description": "VBA official page."}
+    ],
+    "Design Tool": [
+        {"name": "Figma", "image": "https://via.placeholder.com/150", "link": "https://www.figma.com/", "description": "Official Figma homepage."},
+        {"name": "Canva", "image": "https://via.placeholder.com/150", "link": "https://www.canva.com/", "description": "Official Canva homepage."},
+        {"name": "Photoshop", "image": "https://via.placeholder.com/150", "link": "https://www.adobe.com/products/photoshop.html", "description": "Official Photoshop homepage."}
+    ],
+    "CMS": [
+        {"name": "WordPress", "image": "https://via.placeholder.com/150", "link": "https://wordpress.org/", "description": "Official WordPress homepage."},
+        {"name": "OctoberCMS", "image": "https://via.placeholder.com/150", "link": "https://octobercms.com/", "description": "Official OctoberCMS homepage."},
+        {"name": "Shopify", "image": "https://via.placeholder.com/150", "link": "https://www.shopify.com/", "description": "Official Shopify homepage."}
+    ]
+}
 
+# Tạo DataFrame từ dữ liệu kỹ năng
+df = pd.DataFrame(skills_data)
 
-st.title(f"Sales Dashboard", anchor=False)
+# Tiêu đề và mô tả
+st.title("Our Team's Skills and Toolset")
 
+st.write("This dashboard provides an overview of the technical skills and tools expertise of our team.")
 
-@st.cache_data
-def get_and_prepare_data(data):
-    df = pd.read_csv(data).assign(
-        date_of_sale=lambda df: pd.to_datetime(df["date_of_sale"]),
-        month=lambda df: df["date_of_sale"].dt.month,
-        year=lambda df: df["date_of_sale"].dt.year,
-    )
-    return df
+# Lựa chọn để hiển thị kỹ năng và công cụ theo từng nhóm
+category_selected = st.selectbox("Filter by Category", options=["All", "Frontend", "Backend", "Database", "DevOps", "Tool", "Design Tool", "CMS"])
 
+# Lọc dữ liệu theo category đã chọn
+filtered_df = df if category_selected == "All" else df[df["Category"] == category_selected]
 
-df = get_and_prepare_data(data=DATA_URL)
-
-# Calculate total revenue for each city and year, and then calculate the percentage change
-city_revenues = (
-    df.groupby(["city", "year"])["sales_amount"]
-    .sum()
-    .unstack()
-    .assign(change=lambda x: x.pct_change(axis=1)[YEAR] * 100)
+# Tạo biểu đồ thanh để hiển thị mức độ thành thạo từng kỹ năng và công cụ
+chart = alt.Chart(filtered_df).mark_bar().encode(
+    x=alt.X("Proficiency (%)", title="Proficiency Level"),
+    y=alt.Y("Skill", sort="-x"),
+    color="Category"
+).properties(
+    title="Skills and Tool Proficiency Level",
+    width=600,
+    height=400
 )
 
+# Hiển thị biểu đồ
+st.altair_chart(chart, use_container_width=True)
 
-# Display the data for each city in separate columns
-columns = st.columns(3)
-for i, city in enumerate(CITIES):
-    with columns[i]:
-        st.metric(
-            label=city,
-            value=f"$ {city_revenues.loc[city, YEAR]:,.0f}",
-            delta=f"{city_revenues.loc[city, 'change']:.0f}% change vs. PY",
-        )
+# Hiển thị các dự án và hình ảnh của category đã chọn
+if category_selected != "All":
+    st.subheader(f"Projects and Examples for {category_selected}")
+    
+    # Tạo hai cột cho dự án
+    columns = st.columns(2)
+    
+    # Duyệt qua các dự án trong category đã chọn và phân chia vào hai cột
+    for i, project in enumerate(projects_data[category_selected]):
+        col = columns[i % 2]  # Dự án sẽ được chia cho hai cột, sử dụng mod để luân phiên
+        with col:
+            st.markdown(f"[![{project['name']}]({project['image']})]({project['link']})")
+            st.write(project["description"])
 
-# Selection fields
-left_col, right_col = st.columns(2)
-analysis_type = left_col.selectbox(
-    label="Analysis by:",
-    options=["Month", "Product Category"],
-    key="analysis_type",
-)
-selected_city = right_col.selectbox("Select a city:", CITIES)
-
-# Toggle for selecting the year for visualization
-previous_year_toggle = st.toggle(
-    value=False, label="Previous Year", key="switch_visualization"
-)
-visualization_year = PREVIOUS_YEAR if previous_year_toggle else YEAR
-
-# Display the year above the chart based on the toggle switch
-st.write(f"**Sales for {visualization_year}**")
-
-# Filter data based on selection for visualization
-if analysis_type == "Product Category":
-    filtered_data = (
-        df.query("city == @selected_city & year == @visualization_year")
-        .groupby("product_category", dropna=False)["sales_amount"]
-        .sum()
-        .reset_index()
-    )
-else:
-    # Group by month number
-    filtered_data = (
-        df.query("city == @selected_city & year == @visualization_year")
-        .groupby("month", dropna=False)["sales_amount"]
-        .sum()
-        .reset_index()
-    )
-    # Ensure month column is formatted as two digits for consistency
-    filtered_data["month"] = filtered_data["month"].apply(lambda x: f"{x:02d}")
-
-# Display the data
-st.bar_chart(filtered_data.set_index(filtered_data.columns[0])["sales_amount"])
+# Mô tả thêm để làm rõ kỹ năng và công cụ
+st.write("**Skill and Tool Proficiency Levels**:")
+for index, row in filtered_df.iterrows():
+    st.write(f"{row['Skill']}: {row['Proficiency (%)']}% - {row['Category']}")
